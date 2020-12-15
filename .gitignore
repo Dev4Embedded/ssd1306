@@ -1,6 +1,9 @@
 *.so
+*.ko
 *.o
 *.mod
 *.log
 *.order
 *.symvers
+*.project
+*.cproject
