@@ -172,9 +172,10 @@ err_alloc:
 static void __exit ssd1306_exit(void)
 {
 	i2c_del_driver(&ssd1306_i2c);
+	device_destroy(disp_class, dev_number);
 	class_destroy(disp_class);
 	unregister_chrdev_region(dev_number, MINOR_COUNT);
-	i2c_del_driver(&ssd1306_i2c);
+
 	printk(KERN_DEBUG "SSD1306 driver successfully removed\n");
 }
 
