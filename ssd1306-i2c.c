@@ -47,7 +47,16 @@ static int ssd1306_setup(struct ssd1306 *oled, struct i2c_client *client)
 		return -EPERM;
 	}
 
-	oled->i2c_client=client;
+	oled->i2c_client = client;
+
+	oled->disp_buff = (uint8_t*)kmalloc(DISP_BUFF_SIZE, GFP_KERNEL);
+	if (!oled->disp_buff)
+		return -ENOMEM;
+
+	memset(oled->disp_buff, 0, DISP_BUFF_SIZE);
+
+	//Inform the driver about data stream:
+	oled->disp_buff[0] = (uint8_t)SET_DISP_START_LINE;
 
 	return 0;
 }
@@ -79,7 +88,11 @@ static int ssd1306_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 
-	ssd1306_setup(oled, client);
+	err = ssd1306_setup(oled, client);
+	if (err) {
+		printk(KERN_DEBUG "Cannot setup OLED display\n");
+		goto err_malloc;
+	}
 
 	spin_lock(&ssd1306_list_lock);
 	list_add(&oled->list, &ssd1306_list);
@@ -114,7 +127,7 @@ err_cdev:
 	spin_lock(&ssd1306_list_lock);
 	list_del(&oled->list);
 	spin_unlock(&ssd1306_list_lock);
-
+err_malloc:
 	kfree(oled);
 
 	return err;
