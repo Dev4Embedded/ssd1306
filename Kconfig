@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0
+menuconfig CONFIG_SSD1306
+	bool "SSD1306 OLED Display support"
+	---help---
+	  Support for SSD1306 OLED display via I2C bus.
+	  Driving via char device or ioctl
