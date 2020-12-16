@@ -35,8 +35,33 @@ static int send_cmd(struct ssd1306 *oled, enum ssd1306_cmd cmd)
  */
 int ssd1306_display(struct ssd1306 *oled)
 {
+	int err;
+
 	if (!oled)
 		return -EPERM;
+
+	err = send_cmd(oled, SET_MEMORY_ADDR_MODE);
+	err |= send_cmd(oled, 0x00);
+	if (err) {
+		LOG(KERN_DEBUG, "Reset memory address mode failed");
+		return err;
+	}
+
+	err = send_cmd(oled, SET_COL_ADRS);
+	err |= send_cmd(oled, 0x00);
+	err |= send_cmd(oled, 127);
+	if (err) {
+		LOG(KERN_DEBUG, "Set column address failed");
+		return err;
+	}
+
+	err = send_cmd(oled, SET_PAGE_ADRS);
+	err |= send_cmd(oled, 0x00);
+	err |= send_cmd(oled, 7);
+	if (err) {
+		LOG(KERN_DEBUG, "Set page address failed");
+		return err;
+	}
 
 	if (oled->disp_buff[0] != SET_DISP_START_LINE) {
 		LOG(KERN_DEBUG, "Display buffer contaminated");
@@ -57,6 +82,7 @@ int ssd1306_display(struct ssd1306 *oled)
  */
 int ssd1306_init_hw(struct ssd1306 *oled)
 {
+#define INIT_FAULT "Initialization fault: %s"
 	int err;
 
 	//Check if ssd1306 was connected to the bus
@@ -66,46 +92,80 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 		return -EIO;
 	}
 
-	send_cmd(oled, SET_DISP_OFF);
+	//Let's perform default initialization
+	err = send_cmd(oled, SET_DISP_OFF);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set display OFF failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_MLTPLX_RATIO);
-	send_cmd(oled, 0x3F);
+	err = send_cmd(oled, SET_MLTPLX_RATIO);
+	err |= send_cmd(oled, 0x3F);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set multiplex ratio failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_DISP_OFFSET);
-	send_cmd(oled, 0);
+	err = send_cmd(oled, SET_DISP_OFFSET);
+	err |= send_cmd(oled, 0);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set display offset failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_DISP_START_LINE);
+	err = send_cmd(oled, SET_DISP_START_LINE);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set start line failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_SEG_REMAP);
+	err = send_cmd(oled, SET_SEG_REMAP);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set segment re-map failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_COM_OUTPUT_INCR);
+	err = send_cmd(oled, SET_COM_OUTPUT_INCR);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set scan direction failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_COM_PINS_HW);
-	send_cmd(oled, 0x02);
+	err = send_cmd(oled, SET_COM_PINS_HW);
+	err |=send_cmd(oled, 0x02);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set COM pins HW conf. failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_CONTRAST_CTRL);
-	send_cmd(oled, 0xFF);
+	err = send_cmd(oled, SET_CONTRAST_CTRL);
+	err |= send_cmd(oled, 0xFF);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set contrast control failed");
+		return err;
+	}
 
-	send_cmd(oled, ENTIRE_DISP_ON);
+	err = send_cmd(oled, ENTIRE_DISP_ON);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set enable to RAM display failed");
+		return err;
+	}
 
-	send_cmd(oled, SET_DISP_CLOCK_DEV);
-	send_cmd(oled, 0x80);
+	err = send_cmd(oled, SET_DISP_CLOCK_DEV);
+	err |= send_cmd(oled, 0x80);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Set display clock divider failed");
+		return err;
+	}
 
-	send_cmd(oled, ENABLE_CHARGE_PUMP_REG);
-	send_cmd(oled, 0x14);
+	err = send_cmd(oled, ENABLE_CHARGE_PUMP_REG);
+	err |= send_cmd(oled, 0x14);
+	if (err) {
+		LOG(KERN_DEBUG, INIT_FAULT, "Enable charge pump failed");
+		return err;
+	}
 
 	LOG(KERN_DEBUG, "Driver display initialize done");
-
-	send_cmd(oled, SET_MEMORY_ADDR_MODE);
-	send_cmd(oled, 0x00);
-
-	send_cmd(oled, SET_COL_ADRS);
-	send_cmd(oled, 0x00);
-	send_cmd(oled, 127);
-
-	send_cmd(oled, SET_PAGE_ADRS);
-	send_cmd(oled, 0x00);
-	send_cmd(oled, 7);
 
 	//TODO: Testing for now, remove it later
 	memset(oled->disp_buff, 0xAA, DISP_BUFF_SIZE);
@@ -113,5 +173,8 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	ssd1306_display(oled);
 
 	send_cmd(oled, SET_DISP_ON);
-	return 0;
+	if (err)
+		LOG(KERN_DEBUG, INIT_FAULT, "Set display ON failed");
+
+	return err;
 }
