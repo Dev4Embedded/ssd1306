@@ -12,6 +12,7 @@
 #define MINOR_BASE     0
 #define MINOR_COUNT    1
 
+#define LOG(sev, ...) printk(sev "ssd1306: " __VA_ARGS__)
 /**
  * TODO: Currently hard-code buffer size for 128x32 resolution.
  *       In next steps extend functionality to get resolution from DTB.

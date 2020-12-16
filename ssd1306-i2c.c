@@ -43,7 +43,7 @@ static struct i2c_driver ssd1306_i2c = {
 static int ssd1306_setup(struct ssd1306 *oled, struct i2c_client *client)
 {
 	if (!client || !oled) {
-		printk(KERN_ALERT "I2C client does not exist\n");
+		LOG(KERN_ALERT, "I2C client does not exist");
 		return -EPERM;
 	}
 
@@ -78,19 +78,19 @@ static int ssd1306_probe(struct i2c_client *client,
 	int err;
 
 	if (!client || !id) {
-		printk(KERN_ALERT "I2C client doesn't exist\n");
+		LOG(KERN_ALERT, "I2C client doesn't exist");
 		return -EPERM;
 	}
 
 	oled = (struct ssd1306 *)kmalloc(sizeof(struct ssd1306), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(oled)) {
-		printk(KERN_DEBUG "Cannot allocate memory for driver\n");
+		LOG(KERN_DEBUG, "Cannot allocate memory for driver");
 		return -ENOMEM;
 	}
 
 	err = ssd1306_setup(oled, client);
 	if (err) {
-		printk(KERN_DEBUG "Cannot setup OLED display\n");
+		LOG(KERN_DEBUG, "Cannot setup OLED display");
 		goto err_malloc;
 	}
 
@@ -103,19 +103,19 @@ static int ssd1306_probe(struct i2c_client *client,
 
 	if (IS_ERR(dev_oled)) {
 		err = IS_ERR(dev_oled);
-		printk(KERN_DEBUG "Cannot create oled device\n");
+		LOG(KERN_DEBUG, "Cannot create oled device");
 		goto err_cdev;
 	}
 
-	printk(KERN_DEBUG "Device %s created\n", DEVICE_NAME);
+	LOG(KERN_DEBUG, "Device %s created", DEVICE_NAME);
 
 	err = ssd1306_init_hw(oled);
 	if (err) {
-		printk(KERN_DEBUG "SSD1306 device doesn't response\n");
+		LOG(KERN_DEBUG, "SSD1306 device doesn't response");
 		goto err_device;
 	}
 
-	printk(KERN_INFO "Driver successfully probed");
+	LOG(KERN_DEBUG, "Driver successfully probed");
 
 	return 0;
 
@@ -148,7 +148,7 @@ static int __init ssd1306_init(void)
 				  MINOR_COUNT, DEVICE_NAME);
 
 	if (err) {
-		printk(KERN_ALERT "Cannot allocate a range of char device\n");
+		LOG(KERN_ALERT, "Cannot allocate a range of char device");
 		goto err_alloc;
 	}
 
@@ -156,18 +156,18 @@ static int __init ssd1306_init(void)
 
 	if (IS_ERR(disp_class)) {
 		err = IS_ERR(disp_class);
-		printk(KERN_ALERT "Cannot create structure of class\n");
+		LOG(KERN_ALERT, "Cannot create structure of class");
 		goto err_class;
 	}
 
 	err = i2c_add_driver(&ssd1306_i2c);
 	if (err) {
-		printk(KERN_ALERT "Can't register I2C driver %s\n",
+		LOG(KERN_ALERT, "Can't register I2C driver %s",
 		       ssd1306_i2c.driver.name);
 		goto err_i2c;
 	}
 
-	printk(KERN_DEBUG "SSD1306 driver initialization done\n");
+	LOG(KERN_DEBUG, "SSD1306 driver initialization done");
 	return 0;
 
 err_i2c:
@@ -189,7 +189,7 @@ static void __exit ssd1306_exit(void)
 	class_destroy(disp_class);
 	unregister_chrdev_region(dev_number, MINOR_COUNT);
 
-	printk(KERN_DEBUG "SSD1306 driver successfully removed\n");
+	LOG(KERN_DEBUG, "SSD1306 driver successfully removed");
 }
 
 module_init(ssd1306_init);

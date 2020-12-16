@@ -11,16 +11,16 @@
 static int send_cmd(struct ssd1306 *oled, enum ssd1306_cmd cmd)
 {
 	if (!oled) {
-		printk(KERN_DEBUG "No access to the oled device\n");
+		LOG(KERN_DEBUG, "No access to the oled device");
 		return -ENXIO;
 	}
 
 	if (!oled->i2c_client) {
-		printk(KERN_DEBUG "No access to the i2c device\n");
+		LOG(KERN_DEBUG, "No access to the i2c device");
 		return -ENXIO;
 	}
 
-	printk(KERN_DEBUG "SSD1306: Send commmand 0x%.2X\n", cmd);
+	LOG(KERN_INFO, "Send command 0x%.2X", (u8)cmd);
 
 	return i2c_smbus_write_byte_data(oled->i2c_client, 0x00, (u8)cmd);
 }
@@ -39,7 +39,7 @@ int ssd1306_display(struct ssd1306 *oled)
 		return -EPERM;
 
 	if (oled->disp_buff[0] != SET_DISP_START_LINE) {
-		printk(KERN_DEBUG "Display buffer infected\n");
+		LOG(KERN_DEBUG, "Display buffer contaminated");
 		oled->disp_buff[0] = SET_DISP_START_LINE;
 	}
 
@@ -62,7 +62,7 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	//Check if ssd1306 was connected to the bus
 	err = send_cmd(oled, NOP);
 	if (err) {
-		printk(KERN_DEBUG "Cannot connect to SSD1306 display\n");
+		LOG(KERN_DEBUG, "Cannot connect to SSD1306 display");
 		return -EIO;
 	}
 
@@ -94,7 +94,7 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	send_cmd(oled, ENABLE_CHARGE_PUMP_REG);
 	send_cmd(oled, 0x14);
 
-	printk(KERN_DEBUG "Init done");
+	LOG(KERN_DEBUG, "Driver display initialize done");
 
 	send_cmd(oled, SET_MEMORY_ADDR_MODE);
 	send_cmd(oled, 0x00);
