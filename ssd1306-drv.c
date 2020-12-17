@@ -4,6 +4,13 @@
 
 #include "ssd1306.h"
 
+/**
+ * TODO: These values should be taken from device tree
+ */
+#define SSD1306_VERTICAL_MAX 32
+#define SSD1306_HORIZONTAL_MAX 128
+#define SSD1306_CELL_CAPACITY 8
+
 #define SSD1306_LEN        0x3
 #define SSD1306_ADDRESS    0x3C
 #define SSD1306_CONTROL    0x00
@@ -23,6 +30,59 @@ static int send_cmd(struct ssd1306 *oled, enum ssd1306_cmd cmd)
 	LOG(KERN_INFO, "Send command 0x%.2X", (u8)cmd);
 
 	return i2c_smbus_write_byte_data(oled->i2c_client, 0x00, (u8)cmd);
+}
+
+/**
+ * @brief
+ *     Place a single pixel at the x and y coordinates
+ * @note
+ *     This function modify only display buffer, to perform your change
+ *     use ssd1306_display() after that.
+ * @param[IN]    oled    pointer to SSD1306 main handle
+ * @param[IN]    y       vertical coordinate
+ * @param[IN]    x       horizontal coordinate
+ *
+ * @return returns zero or negative error
+ */
+int ssd1306_draw_pxl(struct ssd1306 *oled, int x, int y)
+{
+	int cell_addr;
+	int row;
+	uint8_t bit;
+
+	if (!oled)
+		return -EPERM;
+
+	if ( x < 0 || y < 0) {
+		LOG(KERN_DEBUG, "Coordinates x and y must be grater then zero");
+		return -EPERM;
+	}
+
+	if (x >= SSD1306_HORIZONTAL_MAX) {
+		LOG(KERN_DEBUG, "Coordinate x has to be smaller then %d",
+		    SSD1306_HORIZONTAL_MAX);
+		return -EPERM;
+	}
+
+	if (y >= SSD1306_VERTICAL_MAX) {
+		LOG(KERN_DEBUG, "Coordinate y has to be smaller then %d",
+		    SSD1306_VERTICAL_MAX);
+		return -EPERM;
+	}
+
+	row = y / SSD1306_CELL_CAPACITY;
+	cell_addr = x + row * SSD1306_HORIZONTAL_MAX;
+	bit = (1 << y%SSD1306_CELL_CAPACITY);
+
+	//Should never happen in theory
+	if (cell_addr >= DISP_BUFF_SIZE) {
+		LOG(KERN_ALERT, "Wrong resolution provided");
+		return -ERANGE;
+	}
+
+	oled->disp_buff[cell_addr] |= bit;
+
+	return 0;
 }
 
 /**
@@ -166,11 +226,6 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	}
 
 	LOG(KERN_DEBUG, "Driver display initialize done");
-
-	//TODO: Testing for now, remove it later
-	memset(oled->disp_buff, 0xAA, DISP_BUFF_SIZE);
-
-	ssd1306_display(oled);
 
 	send_cmd(oled, SET_DISP_ON);
 	if (err)

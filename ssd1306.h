@@ -35,3 +35,4 @@ struct ssd1306 {
 
 int ssd1306_init_hw(struct ssd1306 *oled);
 int ssd1306_display(struct ssd1306 *oled);
+int ssd1306_draw_pxl(struct ssd1306 *oled, int x, int y);
