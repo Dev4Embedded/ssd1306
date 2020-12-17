@@ -10,9 +10,6 @@
 
 #include "ssd1306.h"
 
-static LIST_HEAD(ssd1306_list);
-static DEFINE_SPINLOCK(ssd1306_list_lock);
-
 static dev_t             dev_number;
 static struct class     *disp_class;
 static struct device    *dev_oled;
@@ -94,10 +91,6 @@ static int ssd1306_probe(struct i2c_client *client,
 		goto err_malloc;
 	}
 
-	spin_lock(&ssd1306_list_lock);
-	list_add(&oled->list, &ssd1306_list);
-	spin_unlock(&ssd1306_list_lock);
-
 	dev_oled = device_create(disp_class, NULL, dev_number,
 				NULL, DEVICE_NAME);
 
@@ -123,10 +116,6 @@ err_device:
 	class_destroy(disp_class);
 err_cdev:
 	cdev_del(&oled->char_dev);
-
-	spin_lock(&ssd1306_list_lock);
-	list_del(&oled->list);
-	spin_unlock(&ssd1306_list_lock);
 err_malloc:
 	kfree(oled);
 
