@@ -128,8 +128,18 @@ int ssd1306_display(struct ssd1306 *oled)
 		oled->disp_buff[0] = SET_DISP_START_LINE;
 	}
 
-	return i2c_master_send(oled->i2c_client, oled->disp_buff,
+	err = i2c_master_send(oled->i2c_client, oled->disp_buff,
 			       DISP_BUFF_SIZE);
+	if (err < 0) {
+		LOG(KERN_DEBUG, "Display refresh failure");
+		return err;
+	}
+
+	if (err != DISP_BUFF_SIZE) {
+		LOG(KERN_DEBUG, "Display refreshed incompletely");
+	}
+
+	return 0;
 }
 
 /**
