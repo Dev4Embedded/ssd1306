@@ -269,3 +269,23 @@ int ssd1306_enable_charge_pump(struct ssd1306* oled, bool enable)
 
 	return err;
 }
+
+/**
+ * @brief
+ *     Perform transition to standby or turn on state.
+ *
+ * @param[IN] oled      pointer to SSD1306 main handle
+ * @param[IN] enable    turn on(true) or turn off(false) display
+ *
+ * @return returns zero or negarive error
+ */
+int ssd1306_enable_display(struct ssd1306* oled, bool enable)
+{
+	if (IS_ERR_OR_NULL(oled))
+		return -EPERM;
+
+	if (enable)
+		return send_cmd(oled, SET_DISP_ON);
+
+	return send_cmd(oled, SET_DISP_OFF);
+}

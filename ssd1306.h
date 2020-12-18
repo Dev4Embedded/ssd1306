@@ -37,3 +37,4 @@ int ssd1306_init_hw(struct ssd1306 *oled);
 int ssd1306_display(struct ssd1306 *oled);
 int ssd1306_draw_pxl(struct ssd1306 *oled, int x, int y);
 int ssd1306_enable_charge_pump(struct ssd1306* oled, bool enable);
+int ssd1306_enable_display(struct ssd1306* oled, bool enable);
