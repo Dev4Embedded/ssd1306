@@ -25,6 +25,8 @@ enum ssd1306_cmd {
 	SET_DISP_OFFSET          = 0xD3,
 	SET_COM_PINS_HW          = 0xDA,
 	ENABLE_CHARGE_PUMP_REG   = 0x8D,
+#define ENABLE_CHARGE_PUMP         0x14
+#define DISABLE_CHARGE_PUMP        0x10
 	//Timing & Driving commands:
 	SET_DISP_CLOCK_DEV       = 0xD5,
 	SET_PRECHARGE_PERIOD     = 0xD9,

@@ -229,7 +229,7 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	}
 
 	err = send_cmd(oled, ENABLE_CHARGE_PUMP_REG);
-	err |= send_cmd(oled, 0x14);
+	err |= send_cmd(oled, ENABLE_CHARGE_PUMP);
 	if (err) {
 		LOG(KERN_DEBUG, INIT_FAULT, "Enable charge pump failed");
 		return err;
@@ -240,6 +240,32 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 	send_cmd(oled, SET_DISP_ON);
 	if (err)
 		LOG(KERN_DEBUG, INIT_FAULT, "Set display ON failed");
+
+	return err;
+}
+
+/**
+ * @brief
+ *     Enable or disable internal charge pump in the oled device.
+ *     It is necessary to properly turn on display.
+ *
+ * @param[IN] oled      pointer to SSD1306 main handle
+ * @param[IN] enable    enable(true) or disable(false) charge pump
+ *
+ * @return returns zero or negative error
+ */
+int ssd1306_enable_charge_pump(struct ssd1306* oled, bool enable)
+{
+	int err;
+
+	if (IS_ERR_OR_NULL(oled))
+		return -EPERM;
+
+	err = send_cmd(oled, ENABLE_CHARGE_PUMP_REG);
+	if (enable)
+		err |= send_cmd(oled, ENABLE_CHARGE_PUMP);
+	else
+		err |= send_cmd(oled, DISABLE_CHARGE_PUMP);
 
 	return err;
 }
