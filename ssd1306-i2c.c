@@ -127,9 +127,7 @@ err_malloc:
 
 static int ssd1306_remove(struct i2c_client *client)
 {
-	int err;
 	struct ssd1306* oled;
-
 
 	if (!client) {
 		LOG(KERN_ALERT, "I2C client device does not exist");
@@ -143,20 +141,7 @@ static int ssd1306_remove(struct i2c_client *client)
 		return -ENXIO;
 	}
 
-	//Clear display area
-	memset(&oled->disp_buff[1], 0x00, DISP_BUFF_SIZE - 1);
-
-	err = ssd1306_display(oled);
-	if (err)
-		LOG(KERN_DEBUG, "Display clear failure");
-
-	err = ssd1306_enable_charge_pump(oled, 0);
-	if (err)
-		LOG(KERN_DEBUG, "Charge pump turning off failure");
-
-	err = ssd1306_enable_display(oled, 0);
-	if (err)
-		LOG(KERN_DEBUG, "Display turning off failure");
+	(void)ssd1306_deinit_hw(oled);
 
 	kfree(oled->disp_buff);
 

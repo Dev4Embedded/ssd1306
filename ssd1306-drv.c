@@ -239,6 +239,33 @@ int ssd1306_init_hw(struct ssd1306 *oled)
 
 /**
  * @brief
+ *     Turn off display, performing transition to standby
+ *
+ * @param oled    pointer to SSD1306 main handle
+ *
+ */
+void ssd1306_deinit_hw(struct ssd1306 *oled)
+{
+	int err;
+
+	//Clear display area
+	memset(&oled->disp_buff[1], 0x00, DISP_BUFF_SIZE - 1);
+
+	err = ssd1306_display(oled);
+	if (err)
+		LOG(KERN_DEBUG, "Display clear failure");
+
+	err = ssd1306_enable_charge_pump(oled, 0);
+	if (err)
+		LOG(KERN_DEBUG, "Charge pump turning off failure");
+
+	err = ssd1306_enable_display(oled, 0);
+	if (err)
+		LOG(KERN_DEBUG, "Display turning off failure");
+}
+
+/**
+ * @brief
  *     Enable or disable internal charge pump in the oled device.
  *     It is necessary to properly turn on display.
  *
