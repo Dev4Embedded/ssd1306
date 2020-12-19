@@ -18,13 +18,14 @@ static struct i2c_device_id ssd1306_id[] = {
 	{ }
 };
 static int ssd1306_probe(struct i2c_client *, const struct i2c_device_id *);
+static int ssd1306_remove(struct i2c_client *);
 static struct i2c_driver ssd1306_i2c = {
 	.driver = {
 		.name	= DEVICE_NAME,
 		.owner	= THIS_MODULE,
 	},
 	.probe = ssd1306_probe,
-	.remove = NULL,
+	.remove = ssd1306_remove,
 	.id_table = ssd1306_id,
 };
 
@@ -100,6 +101,8 @@ static int ssd1306_probe(struct i2c_client *client,
 		goto err_cdev;
 	}
 
+	i2c_set_clientdata(client, oled);
+
 	LOG(KERN_DEBUG, "Device %s created", DEVICE_NAME);
 
 	err = ssd1306_init_hw(oled);
@@ -122,6 +125,45 @@ err_malloc:
 	return err;
 }
 
+static int ssd1306_remove(struct i2c_client *client)
+{
+	int err;
+	struct ssd1306* oled;
+
+
+	if (!client) {
+		LOG(KERN_ALERT, "I2C client device does not exist");
+		return -ENXIO;
+	}
+
+	oled = i2c_get_clientdata(client);
+
+	if (IS_ERR_OR_NULL(oled)) {
+		LOG(KERN_ALERT, "I2C does not assigned to the display");
+		return -ENXIO;
+	}
+
+	//Clear display area
+	memset(&oled->disp_buff[1], 0x00, DISP_BUFF_SIZE - 1);
+
+	err = ssd1306_display(oled);
+	if (err)
+		LOG(KERN_DEBUG, "Display clear failure");
+
+	err = ssd1306_enable_charge_pump(oled, 0);
+	if (err)
+		LOG(KERN_DEBUG, "Charge pump turning off failure");
+
+	err = ssd1306_enable_display(oled, 0);
+	if (err)
+		LOG(KERN_DEBUG, "Display turning off failure");
+
+	kfree(oled->disp_buff);
+
+	LOG(KERN_DEBUG, "I2C bus driver for display removed");
+
+	return 0;
+}
 /**
  * @brief
  *     Kernel module initialization function. Creates character device for

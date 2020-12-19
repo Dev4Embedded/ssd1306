@@ -2,7 +2,9 @@
 # Makefile for SSD1306 OLED display driver
 
 obj-$(CONFIG_SSD1306) += ssd1306.o
-ssd1306-$(CONFIG_SSD1306) := ssd1306-i2c.o ssd1306-drv.o
+ssd1306-$(CONFIG_SSD1306) := ssd1306-i2c.o \
+			     ssd1306-drv.o \
+			     ssd1306-font.o
 
 modules modules_install clean:
 	$(MAKE) -C $(KERNELDIR) M=$(shell pwd) $@
