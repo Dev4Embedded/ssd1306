@@ -13,6 +13,8 @@
 static dev_t             dev_number;
 static struct class     *disp_class;
 static struct device    *dev_oled;
+static struct cdev       char_dev;
+
 static struct i2c_device_id ssd1306_id[] = {
 	{DEVICE_NAME, 0},
 	{ }
@@ -28,6 +30,26 @@ static struct i2c_driver ssd1306_i2c = {
 	.remove = ssd1306_remove,
 	.id_table = ssd1306_id,
 };
+
+static ssize_t ssd1306_write(struct file *, const char __user *,
+			     size_t, loff_t *);
+static int ssd1306_open(struct inode *, struct file *);
+static struct file_operations fops ={
+	.write = ssd1306_write,
+	.open = ssd1306_open,
+};
+
+static int ssd1306_open(struct inode *inode, struct file *df)
+{
+	LOG(KERN_WARNING, "Open");
+	return 0;
+}
+static ssize_t ssd1306_write(struct file *fd, const char __user *user,
+			     size_t size, loff_t *loff)
+{
+	LOG(KERN_WARNING, "Write");
+	return sizeof(char);
+}
 
 /**
  * @brief
@@ -61,6 +83,17 @@ static int ssd1306_setup(struct ssd1306 *oled, struct i2c_client *client)
 
 /**
  * @brief
+ *     Frees all resource related to SSD1306 data structure
+ *
+ * @param oled    pointer to SSD1306 main handle
+ *
+ */
+static void ssd1306_free(struct ssd1306 *oled)
+{
+	kfree(oled->disp_buff);
+}
+/**
+ * @brief
  *     Probe I2C OLED display
  *
  * @param[IN] *client    pointer to I2C client
@@ -86,10 +119,18 @@ static int ssd1306_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 
+	cdev_init(&char_dev, &fops);
+
+	err = cdev_add(&char_dev, dev_number, 1);
+	if (err) {
+		LOG(KERN_ALERT, "Character device failed to add");
+		goto err_malloc;
+	}
+
 	err = ssd1306_setup(oled, client);
 	if (err) {
 		LOG(KERN_DEBUG, "Cannot setup OLED display");
-		goto err_malloc;
+		goto err_cdev;
 	}
 
 	dev_oled = device_create(disp_class, NULL, dev_number,
@@ -98,7 +139,7 @@ static int ssd1306_probe(struct i2c_client *client,
 	if (IS_ERR(dev_oled)) {
 		err = IS_ERR(dev_oled);
 		LOG(KERN_DEBUG, "Cannot create oled device");
-		goto err_cdev;
+		goto err_setup;
 	}
 
 	i2c_set_clientdata(client, oled);
@@ -117,6 +158,8 @@ static int ssd1306_probe(struct i2c_client *client,
 
 err_device:
 	class_destroy(disp_class);
+err_setup:
+	ssd1306_free(oled);
 err_cdev:
 	cdev_del(&oled->char_dev);
 err_malloc:
