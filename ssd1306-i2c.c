@@ -7,13 +7,14 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/i2c.h>
+#include <linux/uaccess.h>
 
 #include "ssd1306.h"
+#include "ssd1306-font.h"
 
 static dev_t             dev_number;
 static struct class     *disp_class;
 static struct device    *dev_oled;
-static struct cdev       char_dev;
 
 static struct i2c_device_id ssd1306_id[] = {
 	{DEVICE_NAME, 0},
@@ -39,16 +40,55 @@ static struct file_operations fops ={
 	.open = ssd1306_open,
 };
 
-static int ssd1306_open(struct inode *inode, struct file *df)
+static int ssd1306_open(struct inode *inode, struct file *fd)
 {
-	LOG(KERN_WARNING, "Open");
+	struct ssd1306 *oled;
+
+	oled = container_of(inode->i_cdev, struct ssd1306, char_dev);
+	if (!oled) {
+		LOG(KERN_WARNING, "Can't find oled device");
+		return -EPERM;
+	}
+
+	fd -> private_data = oled;
+
+	ssd1306_clear_display(oled);
+
 	return 0;
 }
 static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 			     size_t size, loff_t *loff)
 {
-	LOG(KERN_WARNING, "Write");
-	return sizeof(char);
+	struct ssd1306 *oled;
+	char *str = NULL;
+	int err;
+
+	oled = fd->private_data;
+	if (!oled) {
+		LOG(KERN_WARNING, "Can't find oled device");
+		return -EPERM;
+	}
+
+	str = kmalloc(sizeof(char) * size, GFP_KERNEL);
+	if (!str) {
+		LOG(KERN_WARNING, "Can't alloc enough memory: %d", size);
+		return -ENOMEM;
+	}
+
+	err = copy_from_user(str, user, size);
+
+	if (err < 0) {
+		LOG(KERN_WARNING, "Copy text from user failed");
+		goto exit;
+	}
+
+	err = ssd1306_print_str(oled, 0, 0, str);
+	err |= ssd1306_display(oled);
+
+exit:
+	kfree(str);
+
+	return size;
 }
 
 /**
@@ -119,9 +159,12 @@ static int ssd1306_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 
-	cdev_init(&char_dev, &fops);
+	/* Initialize character device for any text related operations
+	 * with display
+	 */
+	cdev_init(&oled->char_dev, &fops);
 
-	err = cdev_add(&char_dev, dev_number, 1);
+	err = cdev_add(&oled->char_dev, dev_number, 1);
 	if (err) {
 		LOG(KERN_ALERT, "Character device failed to add");
 		goto err_malloc;
@@ -143,6 +186,7 @@ static int ssd1306_probe(struct i2c_client *client,
 	}
 
 	i2c_set_clientdata(client, oled);
+	dev_set_drvdata(dev_oled, oled);
 
 	LOG(KERN_DEBUG, "Device %s created", DEVICE_NAME);
 

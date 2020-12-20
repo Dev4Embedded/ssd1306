@@ -3,6 +3,7 @@
 #include <linux/i2c.h>
 
 #include "ssd1306.h"
+#include "ssd1306-font.h"
 
 #define SSD1306_LEN        0x3
 #define SSD1306_ADDRESS    0x3C
@@ -131,6 +132,31 @@ int ssd1306_display(struct ssd1306 *oled)
 	if (err != DISP_BUFF_SIZE) {
 		LOG(KERN_DEBUG, "Display refreshed incompletely");
 	}
+
+	return 0;
+}
+
+/**
+ * @brief
+ *     Clear display buffer
+ *
+ * @param[IN] oled   pointer to SSD1306 main handle
+ *
+ * @return returns zero or negative error
+ */
+int ssd1306_clear_display(struct ssd1306 *oled)
+{
+	if (!oled)
+		return -EPERM;
+
+	if (!oled->disp_buff)
+		return -EPERM;
+
+	//Clear all data in display buffer
+	memset(oled->disp_buff, 0x00, DISP_BUFF_SIZE);
+
+	//Inform the driver about incoming transaction
+	oled->disp_buff[0] = SET_DISP_START_LINE;
 
 	return 0;
 }
