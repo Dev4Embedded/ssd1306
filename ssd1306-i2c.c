@@ -11,6 +11,7 @@
 
 #include "ssd1306.h"
 #include "ssd1306-font.h"
+#include "ssd1306-cmode.h"
 
 static dev_t             dev_number;
 static struct class     *disp_class;
@@ -62,6 +63,7 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 	struct ssd1306 *oled;
 	char *str = NULL;
 	int err;
+	int sent_chars = 0;
 
 	oled = fd->private_data;
 	if (!oled) {
@@ -69,12 +71,13 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 		return -EPERM;
 	}
 
-	str = kmalloc(sizeof(char) * size, GFP_KERNEL);
+	str = kmalloc((sizeof(char) * size) + 1, GFP_KERNEL);
 	if (!str) {
 		LOG(KERN_WARNING, "Can't alloc enough memory: %d", size);
 		return -ENOMEM;
 	}
 
+	memset(str, 0, size + 1);
 	err = copy_from_user(str, user, size);
 
 	if (err < 0) {
@@ -82,7 +85,14 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 		goto exit;
 	}
 
-	err = ssd1306_print_str(oled, 0, 0, str);
+	err = ssd1306_cut_str(&oled->cmode, str);
+	if (err)
+		sent_chars += err;
+
+	err |= ssd1306_print_str(oled, 0, 0, oled->cmode.actual_disp[0]);
+	err |= ssd1306_print_str(oled, 0, 8, oled->cmode.actual_disp[1]);
+	err |= ssd1306_print_str(oled, 0, 16, oled->cmode.actual_disp[2]);
+	err |= ssd1306_print_str(oled, 0, 24, oled->cmode.actual_disp[3]);
 	err |= ssd1306_display(oled);
 
 exit:
@@ -118,7 +128,14 @@ static int ssd1306_setup(struct ssd1306 *oled, struct i2c_client *client)
 	//Inform the driver about data stream:
 	oled->disp_buff[0] = (uint8_t)SET_DISP_START_LINE;
 
-	return 0;
+	/**
+	 * TODO: Currently try to setup character mode using default
+	 *       configuration until getting parameters from device tree
+	 *       will not provided
+	 */
+	return ssd1306_cmode_setup(&oled->cmode, DEFAULT_FONT_WIDTH,
+				   DEFAULT_FONT_HEIGHT, SSD1306_HORIZONTAL_MAX,
+				   SSD1306_VERTICAL_MAX);
 }
 
 /**
@@ -131,6 +148,7 @@ static int ssd1306_setup(struct ssd1306 *oled, struct i2c_client *client)
 static void ssd1306_free(struct ssd1306 *oled)
 {
 	kfree(oled->disp_buff);
+	ssd1306_cmode_free(&oled->cmode);
 }
 /**
  * @brief

@@ -4,9 +4,7 @@
 #include <linux/slab.h>
 
 #include "ssd1306.h"
-
-#define DEFAULT_FONT_WIDTH    8
-#define DEFAULT_FONT_HEIGHT   8
+#include "ssd1306-font.h"
 
 /**
  * @brief
@@ -132,7 +130,7 @@ int ssd1306_print_str(struct ssd1306 *oled, int x, int y, const char* str)
 	total_char_width = font_width + 1;
 	// Check if possible to entire whole string to the display
 	if (avaible_space < total_char_width * str_len) {
-		LOG(KERN_DEBUG, "ASCII string %s is too long: %d pixels"
+		LOG(KERN_DEBUG, "ASCII string %s is too long: %d pixels "
 		    "over border", str,
 		    (total_char_width * str_len) - avaible_space);
 		return -EPERM;

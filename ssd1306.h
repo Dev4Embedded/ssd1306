@@ -30,15 +30,20 @@
 */
 #define DISP_BUFF_SIZE    (512 + 1)
 
+struct ssd1306_cmode{
+	int max_cols;       /*! Max. characters in single line */
+	int max_lines;      /*! Max. lines on the display */
+	int max_buff_size;  /*! Max. display capacity */
+	char **actual_disp; /*! Array contains actually displaying strings */
+};
+
 struct ssd1306 {
 	struct cdev char_dev;
 	struct device *device;
 	struct i2c_client *i2c_client;
-
-	struct mutex lock;
-	struct list_head list;
-
+	struct ssd1306_cmode cmode;
 	uint8_t *disp_buff;
+
 };
 
 int ssd1306_init_hw(struct ssd1306 *oled);
