@@ -95,7 +95,14 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 	err |= ssd1306_print_str(oled, 0, 8, oled->cmode.actual_disp[1]);
 	err |= ssd1306_print_str(oled, 0, 16, oled->cmode.actual_disp[2]);
 	err |= ssd1306_print_str(oled, 0, 24, oled->cmode.actual_disp[3]);
-	err |= ssd1306_display(oled);
+
+	if (err < 0)
+		LOG(KERN_DEBUG, "Write the string to the buffer failure");
+
+	err = ssd1306_display(oled);
+	if (err)
+		LOG(KERN_DEBUG, "Write to the display failure");
+
 
 exit:
 	kfree(str);
