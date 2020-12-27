@@ -43,6 +43,7 @@ int ssd1306_draw_pxl(struct ssd1306 *oled, int x, int y)
 	int cell_addr;
 	int row;
 	uint8_t bit;
+	const int offset = sizeof(SET_DISP_START_LINE);
 
 	if (!oled)
 		return -EPERM;
@@ -65,7 +66,8 @@ int ssd1306_draw_pxl(struct ssd1306 *oled, int x, int y)
 	}
 
 	row = y / SSD1306_CELL_CAPACITY;
-	cell_addr = x + row * SSD1306_HORIZONTAL_MAX;
+	//Calculate cell address and add needed offset for command in DMA stream
+	cell_addr = (x + row * SSD1306_HORIZONTAL_MAX) + offset;
 	bit = (1 << y%SSD1306_CELL_CAPACITY);
 
 	//Should never happen in theory
