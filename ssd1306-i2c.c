@@ -85,6 +85,8 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 		goto exit;
 	}
 
+	ssd1306_clear_display(oled);
+
 	err = ssd1306_cut_str(&oled->cmode, str);
 	if (err)
 		sent_chars += err;
@@ -97,8 +99,7 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 
 exit:
 	kfree(str);
-
-	return size;
+	return sent_chars;
 }
 
 /**

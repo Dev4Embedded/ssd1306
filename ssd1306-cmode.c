@@ -118,7 +118,7 @@ int ssd1306_cut_str(struct ssd1306_cmode* cmode, char* str)
 {
 	char *position;
 	char *line;
-	int col_num;
+	int col_num, len;
 	int counter = 0;
 	int line_num = 0;
 
@@ -126,12 +126,13 @@ int ssd1306_cut_str(struct ssd1306_cmode* cmode, char* str)
 		return -EINVAL;
 
 	position = str;
+	len = strlen(position);
 
 	for (; line_num < cmode->max_lines; line_num++) {
 		line = cmode->actual_disp[line_num];
 
 		for(col_num = 0; col_num < cmode->max_cols; col_num++) {
-			if (position) {
+			if (counter < len) {
 
 				/** The string could contains special characters
 				 *  like new line or carrier return and others
@@ -139,6 +140,7 @@ int ssd1306_cut_str(struct ssd1306_cmode* cmode, char* str)
 				 *  Skip one line.
 				 */
 				if (!ALFANUM(*position)) {
+					counter++;
 					while (col_num < cmode->max_cols)
 						line[col_num++] = 0;
 					break;
