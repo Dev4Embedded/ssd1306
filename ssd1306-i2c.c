@@ -64,6 +64,7 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 	char *str = NULL;
 	int err;
 	int sent_chars = 0;
+	int line = 0;
 
 	oled = fd->private_data;
 	if (!oled) {
@@ -88,21 +89,23 @@ static ssize_t ssd1306_write(struct file *fd, const char __user *user,
 	ssd1306_clear_display(oled);
 
 	err = ssd1306_cut_str(&oled->cmode, str);
-	if (err)
+	if (err >= 0)
 		sent_chars += err;
+	else
+		return err;
 
-	err |= ssd1306_print_str(oled, 0, 0, oled->cmode.actual_disp[0]);
-	err |= ssd1306_print_str(oled, 0, 8, oled->cmode.actual_disp[1]);
-	err |= ssd1306_print_str(oled, 0, 16, oled->cmode.actual_disp[2]);
-	err |= ssd1306_print_str(oled, 0, 24, oled->cmode.actual_disp[3]);
-
-	if (err < 0)
-		LOG(KERN_DEBUG, "Write the string to the buffer failure");
+	while(line < oled->cmode.max_lines) {
+		err = ssd1306_print_str(oled, 0, line * DEFAULT_FONT_HEIGHT,
+					oled->cmode.actual_disp[line]);
+		if (err < 0)
+			LOG(KERN_DEBUG, "Write the string to the buffer "
+					"failure");
+		line++;
+	}
 
 	err = ssd1306_display(oled);
 	if (err)
 		LOG(KERN_DEBUG, "Write to the display failure");
-
 
 exit:
 	kfree(str);
